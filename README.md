@@ -3,7 +3,7 @@ This program is a MIPS Assembly simulator made for the purpose of education.
 ## Dependencies
 * PySide2
 * numpy
-* opengl
+* opengl  
 To download the dependecies run `./startup.sh` or `pip install requirements.txt`.
 
 ## How to run:

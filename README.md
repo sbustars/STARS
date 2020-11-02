@@ -24,7 +24,7 @@ To download the dependecies run `./startup.sh` or `pip install -r requirements.t
 * `-pa`  Program arguments for the MIPS program
     
 ## Example:
-* `sbumips.py tests/test2.asm -d`     Runs test2.asm with debugger on
-* `sbumips.py tests/test2.asm -g`     Runs test2.asm with garbage data on
-* `sbumips.py tests/test2.asm -d -g`     Runs test2.asm with debugger and garbage data on
-* `sbumips.py tests/test2.asm -pa A 30`     Runs test2.asm with program arguments "A" and "30"
+* `stars.py tests/test2.asm -d`     Runs test2.asm with debugger on
+* `stars.py tests/test2.asm -g`     Runs test2.asm with garbage data on
+* `stars.py tests/test2.asm -d -g`     Runs test2.asm with debugger and garbage data on
+* `stars.py tests/test2.asm -pa A 30`     Runs test2.asm with program arguments "A" and "30"

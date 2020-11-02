@@ -5,7 +5,7 @@ This program is a MIPS Assembly simulator made for the purpose of education. Ins
 * PySide2
 * NumPy
 
-To download the dependecies run `./startup.sh` or `pip install -r requirements.txt`.
+To download the dependecies run `pip install -r requirements.txt`.
 
 ## How to run:
 * `sbumips.py [-a] [-h] [-d] [-g] [-n #] [-i] [-w] [-pa arg1, arg2, ...] filename`

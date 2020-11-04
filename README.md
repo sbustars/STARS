@@ -1,6 +1,8 @@
 # STARS: Stony Brook Assembler and Run-time Simulator
 This program is a MIPS Assembly simulator made for the purpose of education. Inspired by Missouri State University's [MARS simulator](https://courses.missouristate.edu/KenVollmar/MARS/).
 
+E-email contact: `stars@cs.stonybrook.edu`
+
 ## Dependencies
 * PySide2
 * NumPy

@@ -4,6 +4,8 @@ from lexer import MipsLexer
 from sly.yacc import Parser
 
 '''
+https://github.com/sbustars/STARS
+
 Copyright 2020 Kevin McDonnell, Jihu Mun, and Ian Peitzsch
 
 Developed by Kevin McDonnell (ktm@cs.stonybrook.edu),
@@ -16,6 +18,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
+
 
 def get_upper_half(x: int) -> int:
     # Get the upper 16 bits of a 32 bit number.
@@ -58,7 +61,7 @@ class MipsParser(Parser):
     @_('LINE_MARKER')
     def filetag(self, p):
         x = p[0].split()
-        file_name = self.filename
+        file_name = x[1]
         line_number = int(x[2])
         self.filename = x[1]
         return FileTag(file_name, line_number)
@@ -102,17 +105,6 @@ class MipsParser(Parser):
     def iType(self, p):
         return IType(p.I_TYPE, [p[1], p[2]], p[3])
 
-    @_('COMPARE_F F_REG F_REG', 'COMPARE_F NUMBER F_REG F_REG', 'COMPARE_F NUMBER COMMA F_REG F_REG')
-    def iType(self, p):
-        if len(p) == 3:
-            return Compare(p.COMPARE_F, p.F_REG0, p.F_REG1, 0)
-
-        return Compare(p.COMPARE_F, p.F_REG0, p.F_REG1, p.NUMBER)
-
-    @_('CONVERT_F F_REG F_REG')
-    def iType(self, p):
-        return Convert(p.CONVERT_F[-1], p.CONVERT_F[-3], p.F_REG0, p.F_REG1)
-
     @_('R_TYPE3 REG REG REG', 'R_TYPE3_F F_REG F_REG F_REG')
     def rType(self, p):
         return RType(p[0], [p[1], p[2], p[3]])
@@ -143,6 +135,13 @@ class MipsParser(Parser):
     def move(self, p):
         return Move(p[0], p[1])
 
+    @_('MOVE_COND REG REG', 'MOVE_COND REG REG NUMBER')
+    def iType(self, p):
+        if len(p) == 3:
+            return MoveCond(p.MOVE_COND, p.REG0, p.REG1, 0)
+
+        return MoveCond(p.MOVE_COND, p.REG0, p.REG1, p.NUMBER)
+
     @_('BRANCH REG REG LABEL', 'ZERO_BRANCH REG LABEL')
     def branch(self, p):
         if len(p) == 4:
@@ -150,13 +149,6 @@ class MipsParser(Parser):
 
         else:
             return Branch(p[0], p[1], '$0', Label(p[2]))
-
-    @_('BRANCH_F LABEL', 'BRANCH_F NUMBER LABEL', 'BRANCH_F NUMBER COMMA LABEL')
-    def branch(self, p):
-        if len(p) == 2:
-            return BranchFloat(p[0], Label(p[1]), 0)
-
-        return BranchFloat(p[0], Label(p.LABEL), p.NUMBER)
 
     @_('SYSCALL')
     def syscall(self, p):
@@ -180,6 +172,39 @@ class MipsParser(Parser):
             return LoadMem(p[0], p.F_REG, p.REG, p.NUMBER)
         else:
             return LoadMem(p[0], p.F_REG, p.REG, 0)
+
+    @_('COMPARE_F F_REG F_REG', 'COMPARE_F NUMBER F_REG F_REG', 'COMPARE_F NUMBER COMMA F_REG F_REG')
+    def iType(self, p):
+        if len(p) == 3:
+            return Compare(p.COMPARE_F, p.F_REG0, p.F_REG1, 0)
+
+        return Compare(p.COMPARE_F, p.F_REG0, p.F_REG1, p.NUMBER)
+
+    @_('CONVERT_F F_REG F_REG')
+    def iType(self, p):
+        return Convert(p.CONVERT_F[-1], p.CONVERT_F[-3], p.F_REG0, p.F_REG1)
+
+    @_('BRANCH_F LABEL', 'BRANCH_F NUMBER LABEL', 'BRANCH_F NUMBER COMMA LABEL')
+    def branch(self, p):
+        if len(p) == 2:
+            return BranchFloat(p[0], Label(p[1]), 0)
+
+        return BranchFloat(p[0], Label(p.LABEL), p.NUMBER)
+
+    @_('MOVE_BTWN_F REG F_REG')
+    def iType(self, p):
+        return MoveFloat(p.MOVE_BTWN_F, p.REG, p.F_REG)
+
+    @_('MOVE_F F_REG F_REG REG')
+    def rType(self, p):
+        return MoveFloat(p.MOVE_F, p.F_REG0, p.F_REG1, p.REG)
+
+    @_('MOVE_COND_F F_REG F_REG', 'MOVE_COND_F F_REG F_REG NUMBER')
+    def iType(self, p):
+        if len(p) == 3:
+            return MoveCond(p.MOVE_COND_F, p.F_REG0, p.F_REG1, 0)
+
+        return MoveCond(p.MOVE_COND_F, p.F_REG0, p.F_REG1, p.NUMBER)
 
     # PSEUDO INSTRUCTIONS
     @_('PS_I_TYPE REG REG NUMBER', 'PS_I_TYPE REG REG CHAR')
@@ -383,7 +408,8 @@ class MipsParser(Parser):
 
         return result
 
-    @_('label ASCIIZ STRING', 'label WORD nums', 'label BYTE chars', 'label ASCII STRING', 'label SPACE nums', 'label HALF nums',
+    @_('label ASCIIZ STRING', 'label WORD nums', 'label BYTE chars', 'label ASCII STRING', 'label SPACE nums',
+       'label HALF nums',
        'label FLOAT floats', 'label DOUBLE floats',
        'ASCIIZ STRING', 'WORD nums', 'BYTE chars', 'ASCII STRING', 'SPACE nums', 'HALF nums',
        'FLOAT floats', 'DOUBLE floats', 'EQV', 'ALIGN NUMBER')

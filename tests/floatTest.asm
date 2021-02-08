@@ -1,13 +1,10 @@
 .data
-a: .float 8.3
+c: .double 1.8733
 
 .text
 main:
 
-la $t0, a
+li $t2, 2
+mtc1 $t2, $f14
 
-l.s $f14, 0($t0)
-cvt.w.s $f12, $f14
-
-li $v0, 2
 syscall

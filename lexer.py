@@ -6,6 +6,8 @@ from sly.lex import Lexer
 import re
 
 '''
+https://github.com/sbustars/STARS
+
 Copyright 2020 Kevin McDonnell, Jihu Mun, and Ian Peitzsch
 
 Developed by Kevin McDonnell (ktm@cs.stonybrook.edu),
@@ -18,6 +20,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
+
 
 def makeRegex() -> Dict[str, str]:
     ret = {}
@@ -43,8 +46,8 @@ def get_reg_value(reg: str) -> str:
 
 class MipsLexer(Lexer):
     tokens = {HALF, ALIGN, EQV, LABEL, ZERO_BRANCH, BRANCH, I_TYPE, LOADS_I,
-              LOADS_R, J_TYPE, J_TYPE_R, R_TYPE3, SYSCALL, R_TYPE2, NOP, BREAK, MOVE,
-              LOADS_F, R_TYPE3_F, R_TYPE2_F, COMPARE_F, BRANCH_F, CONVERT_F,
+              LOADS_F, R_TYPE3_F, R_TYPE2_F, COMPARE_F, BRANCH_F, CONVERT_F, MOVE_BTWN_F, MOVE_F, MOVE_COND_F,
+              LOADS_R, J_TYPE, J_TYPE_R, R_TYPE3, SYSCALL, R_TYPE2, NOP, BREAK, MOVE, MOVE_COND,
               REG, F_REG, LABEL, NUMBER, STRING, CHAR, FLOAT_LITERAL,
               LPAREN, RPAREN, COMMA, COLON, LINE_MARKER,
               TEXT, DATA, WORD, BYTE, FLOAT, DOUBLE, ASCIIZ, ASCII, SPACE,
@@ -56,15 +59,21 @@ class MipsLexer(Lexer):
     LOADS_F = r'\b(l|s)\.[sd]\b'
     R_TYPE3_F = r'\b(add|sub|mul|div)\.[sd]\b'
     R_TYPE2_F = r'\b(abs|ceil\.w|floor\.w|mov|neg|round\.w|trunc\.w|sqrt)\.[sd]\b'
-    COMPARE_F = r'\b(c\.(eq|le|lt)\.[ds])\b'
+
+    COMPARE_F = r'\b(c\.(eq|le|lt)\.[sd])\b'
     BRANCH_F = r'\b(bc1[ft])\b'
-    CONVERT_F = r'\b(cvt\.(w\.[ds]|s\.[dw]|d\.[sw]))\b'
+
+    CONVERT_F = r'\b(cvt\.(w\.[sd]|s\.[dw]|d\.[sw]))\b'
+    MOVE_BTWN_F = r'\b(m[ft]c1)\b'
+    MOVE_F = r'\b(mov[nz])\.[sd]\b'
+    MOVE_COND_F = r'\b(mov[ft])\.[sd]\b'
 
     # Basic instructions
-    R_TYPE3 = r'\b(and|addu?|mul|[xn]?or|sllv|srav|slt[u]?|sub[u]?|mov[nz])\b'
+    R_TYPE3 = r'\b(and|addu?|mul|[xn]?or|sllv|srlv|srav|slt[u]?|sub[u]?|mov[nz])\b'
     R_TYPE2 = r'\b(div[u]?|mult[u]?|madd[u]?|msub[u]?|cl[oz])\b'
 
     MOVE = r'\b(m[tf]hi|m[tf]lo)\b'
+    MOVE_COND = r'\b(mov[ft])\b'
 
     J_TYPE = r'\b(j|b|jal)\b'
     J_TYPE_R = r'\b(jalr|jr)\b'
@@ -118,6 +127,9 @@ class MipsLexer(Lexer):
     # \x81\x83
     @_(r'(\x81\x82|\x81\x83) ".*?" \d+')
     def LINE_MARKER(self, t):
+        x = t.value.split()
+        self.lineno = int(x[2])
+        self.filename = x[1]
         return t
 
     @_(r'[$](a[0123t]|s[01234567]|t[0123456789]|v[01]|ra|sp|fp|gp|zero|3[01]|[12]?\d) *,?')

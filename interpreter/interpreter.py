@@ -19,6 +19,8 @@ from interpreter.syscalls import syscalls
 from settings import settings
 
 '''
+https://github.com/sbustars/STARS
+
 Copyright 2020 Kevin McDonnell, Jihu Mun, and Ian Peitzsch
 
 Developed by Kevin McDonnell (ktm@cs.stonybrook.edu),
@@ -32,11 +34,13 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
 
+
 class Interpreter(QWidget):
     step = Signal()
     console_out = Signal(str)
     end = Signal(bool)
     start = Signal()
+    mem_access = Signal()
 
     def out(self, s: str, end='') -> None:
         if settings['gui']:
@@ -211,18 +215,20 @@ class Interpreter(QWidget):
 
     def handleArgs(self, args: List[str]) -> None:
         saveAddr = settings['data_max'] - 3
-        stack = settings['initial_$sp']
-
+        temp = settings['initial_$sp'] - 4 - (4 * len(args))
+        # args.reverse()
+        stack = temp
+        self.mem.addWord(len(args), stack)
+        stack += 4
         for arg in args:
             saveAddr -= (len(arg) + 1)
             self.mem.addAsciiz(arg, saveAddr)
             self.mem.addWord(saveAddr, stack)
-            stack -= 4
+            stack += 4
 
-        self.mem.addWord(len(args), stack)
-        self.reg['$sp'] = stack
+        self.reg['$sp'] = temp
         self.reg['$a0'] = len(args)
-        self.reg['$a1'] = stack + 4
+        self.reg['$a1'] = temp + 4
 
     def init_registers(self, randomize: bool) -> None:
         for r in const.REGS:
@@ -326,6 +332,10 @@ class Interpreter(QWidget):
         def interpret_as_float(x: int) -> float32:
             x_bytes = struct.pack('>i', x)
             return struct.unpack('>f', x_bytes)[0]
+
+        def interpret_as_int(x: float32) -> int:
+            x_bytes = struct.pack('>f', x)
+            return struct.unpack('>i', x_bytes)[0]
 
         # Instruction with 3 registers
         if type(instr) is RType and len(instr.regs) == 3:
@@ -470,6 +480,8 @@ class Interpreter(QWidget):
 
             else:  # Other store instructions
                 instrs.table[op](addr, self.mem, self.get_register(reg))
+            if settings['gui']:
+                self.mem_access.emit()
 
         # Mfhi, mflo, mthi, mtlo
         elif type(instr) is Move:
@@ -484,6 +496,53 @@ class Interpreter(QWidget):
                 dest = op[2:]
 
             self.set_register(dest, self.get_register(src))
+
+        # Floating point move instructions
+        elif type(instr) is MoveFloat:
+            op = instr.operation
+            rs = instr.rs
+            rt = instr.rt
+
+            if op == 'mfc1':
+                rt_float = self.get_reg_float(rt)
+                rt_int = interpret_as_int(rt_float)
+                self.set_register(rs, rt_int)
+
+            elif op == 'mtc1':
+                rs_int = self.get_register(rs)
+                rs_float = interpret_as_float(rs_int)
+                self.set_reg_float(rt, rs_float)
+
+            elif op[:4] in ['movn', 'movz']:
+                rd_data = self.get_register(instr.rd)
+
+                if (op[3] == 'z' and rd_data == 0) or (op[3] == 'n' and rd_data != 0):
+                    if is_float_single(op):
+                        rt_data = self.get_reg_float(rt)
+                        self.set_reg_float(rs, rt_data)
+                    else:
+                        rt_data = self.get_reg_double(rt)
+                        self.set_reg_double(rs, rt_data)
+
+        elif type(instr) is MoveCond:
+            op = instr.operation
+            flag = self.condition_flags[instr.flag]
+
+            rs = instr.rs
+            rt = instr.rt
+
+            if (op[3] == 't' and flag) or (op[3] == 'f' and not flag):
+                if is_float_single(op):
+                    rt_data = self.get_reg_float(rt)
+                    self.set_reg_float(rs, rt_data)
+
+                elif is_float_double(op):
+                    rt_data = self.get_reg_double(rt)
+                    self.set_reg_double(rs, rt_data)
+
+                else:
+                    rt_data = self.get_register(rt)
+                    self.set_register(rs, rt_data)
 
         # syscall
         elif type(instr) is Syscall:
@@ -625,6 +684,8 @@ class Interpreter(QWidget):
                         first = False
 
                 elif settings['gui'] and type(self.instr) is Syscall and (self.reg['$v0'] == 10 or self.reg['$v0'] == 17):
+                    if settings['disp_instr_count']:
+                        self.out(f'\nInstruction count: {self.instruction_count}')
                     self.end.emit(False)
                     break
 

@@ -8,6 +8,8 @@ from preprocess import walk, link, preprocess
 from settings import settings
 
 '''
+https://github.com/sbustars/STARS
+
 Copyright 2020 Kevin McDonnell, Jihu Mun, and Ian Peitzsch
 
 Developed by Kevin McDonnell (ktm@cs.stonybrook.edu),
@@ -20,6 +22,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
+
 
 def init_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
@@ -59,30 +62,30 @@ def assemble(filename: str) -> List:
     walk(path, files, eqv_dict, abs_to_rel, path.parent)
     contents = {}
     results = {}
-
+    processed = {}
     for file in files:
         with file.open() as f:
             s = f.readlines()
             file = file.as_posix()
 
             contents[file] = ''.join(s)
-            contents[file] = preprocess(contents[file], file, eqv_dict)
+            processed[file] = preprocess(contents[file], file, eqv_dict)
 
             lexer = MipsLexer(file)
             parser = MipsParser(contents[file], file)
 
-            tokenized = lexer.tokenize(contents[file])
+            tokenized = lexer.tokenize(processed[file])
             results[file] = parser.parse(tokenized)
 
     if settings['assemble']:
         print('Program assembled successfully.')
         exit()
 
-    result = link(files, contents, abs_to_rel)
-    parser = MipsParser(result, files[0])
+    og_text, text = link(files, contents, processed, abs_to_rel)
+    parser = MipsParser(og_text, files[0])
     lexer = MipsLexer(files[0].as_posix())
 
-    t = lexer.tokenize(result)
+    t = lexer.tokenize(text)
     return parser.parse(t)
 
 
@@ -98,7 +101,7 @@ if __name__ == '__main__':
         inter.interpret()
 
         if settings['disp_instr_count']:
-            print(f'\nInstruction count: {inter.instruction_count}')
+            inter.out(f'\nInstruction count: {inter.instruction_count}')
 
     except Exception as e:
         if hasattr(e, 'message'):

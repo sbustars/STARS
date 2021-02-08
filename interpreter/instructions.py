@@ -8,6 +8,8 @@ from constants import WORD_SIZE, HALF_SIZE, WORD_MASK, WORD_MAX, WORD_MIN
 from interpreter import exceptions as ex
 
 '''
+https://github.com/sbustars/STARS
+
 Copyright 2020 Kevin McDonnell, Jihu Mun, and Ian Peitzsch
 
 Developed by Kevin McDonnell (ktm@cs.stonybrook.edu),
@@ -20,6 +22,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 '''
+
 
 # Regular instructions
 # Helper function to account for overflow issues.
@@ -488,7 +491,10 @@ def sqrt(a: Union[float32, float]) -> Union[float32, float]:
         else:
             return float('nan')
 
-    return a ** 0.5
+    if type(a) is float32:
+        return float32(math.sqrt(a))
+
+    return math.sqrt(a)
 
 
 # Helper method for float -> int conversion instructions

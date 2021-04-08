@@ -140,6 +140,7 @@ def link(files: List[Path], contents: Dict[str, str], processed: Dict[str, str],
         if name in abs_to_rel:
             pattern = rf'\.include "{abs_to_rel[name]}".*?\n'
             og_text = re.sub(pattern, content, og_text)
+            processed[name] = re.sub(r'\\', '\\\\\\\\', processed[name])
             text = re.sub(pattern, processed[name], text)
 
     return (og_text, text)

@@ -115,6 +115,8 @@ def preprocess(contents: str, file: str, eqv: Dict[str, str]) -> str:
     count = 1
     first_line = True
 
+    # print(contents)
+    # print(contents.split('\n'))
     for line in contents.split('\n'):
         line = line.strip()
         line = substitute(line, eqv)
@@ -142,5 +144,4 @@ def link(files: List[Path], contents: Dict[str, str], processed: Dict[str, str],
             og_text = re.sub(pattern, content, og_text)
             processed[name] = re.sub(r'\\', '\\\\\\\\', processed[name])
             text = re.sub(pattern, processed[name], text)
-
     return (og_text, text)

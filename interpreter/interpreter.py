@@ -393,7 +393,7 @@ class Interpreter(QWidget):
                 self.set_reg_double(r1, result)
 
             elif op in {'mult', 'multu', 'madd', 'maddu', 'msub', 'msubu'}:
-                signed = op[-1] == 'u'
+                signed = op[-1] != 'u'
                 r1_data = self.get_register(r1)
                 r2_data = self.get_register(r2)
 
@@ -415,7 +415,7 @@ class Interpreter(QWidget):
                 self.set_register('hi', high)
 
             elif op == 'div' or op == 'divu':
-                signed = op[-1] == 'u'
+                signed = op[-1] != 'u'
                 result, remainder = instrs.div(self.get_register(r1), self.get_register(r2), signed=signed)
 
                 # Set lo to quotient, and hi to remainder
